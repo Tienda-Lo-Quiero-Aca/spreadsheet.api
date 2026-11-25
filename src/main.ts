@@ -6,6 +6,7 @@ import { createBullBoard } from '@bull-board/api';
 import { ExpressAdapter } from '@bull-board/express';
 import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app/app.module';
+import { createDocsSiteRouter } from './app/driver/docs/docs-site.router';
 import { SheetOrderQueue } from './app/queue/sheet/SheetOrderQueue';
 
 async function bootstrap(): Promise<void> {
@@ -21,6 +22,7 @@ async function bootstrap(): Promise<void> {
   );
 
   setupBullBoard(app, configService);
+  setupDocsSite(app, configService);
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
@@ -55,6 +57,31 @@ function setupBullBoard(
   });
 
   app.use(path, basicAuth(username, password), serverAdapter.getRouter());
+}
+
+function setupDocsSite(
+  app: Awaited<ReturnType<typeof NestFactory.create>>,
+  configService: ConfigService,
+): void {
+  if (!booleanConfig(configService, 'DOCS_SITE_ENABLED', true)) {
+    return;
+  }
+
+  const path = configService.get<string>('DOCS_SITE_PATH') || '/docs';
+  const username = configService.get<string>('DOCS_SITE_USER');
+  const password = configService.get<string>('DOCS_SITE_PASSWORD');
+
+  // With both set the site asks for them and publishes every page; without
+  // them it is open and leaves out the page about the server. The markdown is
+  // read from the repository checkout the service runs from.
+  app.use(
+    path,
+    createDocsSiteRouter({
+      basePath: path,
+      rootDirectory: process.cwd(),
+      credentials: username && password ? { username, password } : undefined,
+    }),
+  );
 }
 
 function basicAuth(username: string, password: string) {

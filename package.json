@@ -9,6 +9,7 @@
     "start:dev": "nest start --watch",
     "lint": "eslint \"src/**/*.ts\"",
     "orders:update-ml-status": "node scripts/update-mercadolibre-status-from-csv.mjs",
+    "docs:preview": "ts-node --transpile-only scripts/preview-docs-site.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit"
